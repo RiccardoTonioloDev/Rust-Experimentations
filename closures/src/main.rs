@@ -18,6 +18,14 @@ fn main() {
     println!("c1 usa 3: {}",c1.value(3));
     println!("c1 usa 3: {}",c1.value(3));
     println!("c1 usa 3: {}",c1.value(3));
+
+    let x = vec![1,2,3];
+
+    let equal_to_x = move |z| z == x;
+
+    let y = vec![1,2,3];
+
+    assert!(equal_to_x(y));
 }
 
 //fn simulated_expensive_calculation(intensity: u32) -> u32{
