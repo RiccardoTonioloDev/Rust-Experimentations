@@ -2,6 +2,10 @@ use std::error::Error;
 use std::env;
 use std::fs;
 
+///
+///# Function that uses the config struct, to execute the minigrep command.
+///## Prerequisites: having a correctly built config struct
+///
 pub fn run(config: Config) -> Result<(),Box<dyn Error>> {
     let contents = fs::read_to_string(config.filename)?;
 
