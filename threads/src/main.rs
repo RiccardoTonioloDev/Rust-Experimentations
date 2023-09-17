@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use std::sync::mpsc;
 
-use std::sync::Mutex;
+use std::sync::{Mutex,Arc};
 
 fn main() {
     let handle = thread::spawn(||{
@@ -102,10 +102,11 @@ fn main() {
     }
     println!("m = {:?}",m);
     println!("-------------------------------------------");
-    let counter = Mutex::new(0);
+    let counter = Arc::new(Mutex::new(0));
     let mut handles = vec![];
 
-    for _ in (0..10){
+    for _ in 0..10{
+        let counter = Arc::clone(&counter);
         let handle = thread::spawn(move ||{
             let mut num = counter.lock().unwrap();
             *num += 1;
@@ -115,4 +116,21 @@ fn main() {
     for handle in handles{
         handle.join().unwrap();
     }
+    println!("Result: {}",*counter.lock().unwrap());
+    println!("-------------------------------------------");
+    println!("DEADLOCK");
+
+    let rs1 = Arc::new(Mutex::new(1));
+    let rs1_th = Arc::clone(&rs1);
+    let rs2 = Arc::new(Mutex::new(2));
+    let rs2_th = Arc::clone(&rs2);
+
+    thread::spawn(move ||{
+        let lk_r1_th = rs1_th.lock();
+        thread::sleep(Duration::from_secs(1));
+        let lk_r2_th = rs2_th.lock();
+    });
+    let lk_r2 = rs2.lock();
+    thread::sleep(Duration::from_secs(1));
+    let lk_r1_th = rs1.lock();
 }
