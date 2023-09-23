@@ -1,3 +1,5 @@
+static mut COUNTER: u32 = 0;
+
 fn main() {
     let mut num = 5;
 
@@ -10,5 +12,16 @@ fn main() {
     unsafe{
         println!("r1 is : {}",*r1);
         println!("r2 is : {}",*r2);
+    }
+
+    add_to_count(4);
+    unsafe{
+        println!("COUNTER: {}",COUNTER);
+    }
+}
+
+fn add_to_count(inc: u32){
+    unsafe{
+        COUNTER += inc;
     }
 }
