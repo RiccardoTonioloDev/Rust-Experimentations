@@ -1,25 +1,42 @@
 use std::net::{TcpListener, TcpStream}; //per ricevere e stabilire connessioni
 
+
+use std::thread;
+use std::time::Duration;
+
 use std::io::prelude::*; //per riuscire ad usare alcune primitive per leggere e scrivere nello
 //stream
 
 use std::fs; //per usare il filesystem di modo da leggere il file html
+
+use web_server::ThreadPool;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
     //bind sarebbe come la classica funzione new
     // - connettere sulla porta 80 andrebbe a fallire probabilmente poichè richiede i permessi di
     // amministratore (da qui la necessità di esprimere un Result come tipo di ritorno)
+    
+    let pool = ThreadPool::new(4);
 
-    for stream in listener.incoming(){
+    for stream in listener.incoming().take(2){
         // - incoming ci fornisce un iteratore che ci permette di scorrere una sequenza di stream
         // di tipo TcpStream (un singolo stream rappresenta una singola connessione tra il client
         // e il server)(una connessione è il nome per l'intero processo di richiesta-risposta)
         let stream = stream.unwrap();
 
-        handle_connection(stream); //stiamo passando l'ownership dello stream ad una funzione
-        //apposita per gestirlo
+        // Questo gestirebbe tutte le connessioni con un thread separato (ci rende vulnerabile ad
+        // un attacco di tipo DoS)
+        //thread::spawn(|| {
+        //    handle_connection(stream); //stiamo passando l'ownership dello stream ad una funzione
+        //    //apposita per gestirlo
+        //});
+
+        pool.execute(||{
+            handle_connection(stream);
+        });
     }
+    println!("Shutting down.");
 }
 
 fn handle_connection(mut stream: TcpStream) {
@@ -37,8 +54,14 @@ fn handle_connection(mut stream: TcpStream) {
     let get = b"GET / HTTP/1.1\r\n"; //creiamo una byte string per fare il confronto con l'inizio
     //del buffer
 
+    let sleep = b"GET /sleep HTTP/1.1\r\n"; //creiamo una byte string per fare il confronto con l'inizio
+    //del buffer
+
     //implementiamo una specie di logica di routing
     let (status_line, filename) = if buffer.starts_with(get) {
+        ("HTTP/1.1 200 OK","hello.html")
+    } else if buffer.starts_with(sleep){
+        thread::sleep(Duration::from_secs(5));
         ("HTTP/1.1 200 OK","hello.html")
     } else {
         ("HTTP/1.1 404 NOT FOUND","404.html")
